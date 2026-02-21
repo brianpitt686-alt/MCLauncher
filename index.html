@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Tab Cloak: Clever Portal -->
+    <title>Clever | Portal</title>
+    <link rel="icon" href="https://support.highlandschools.org/wp-content/uploads/2020/11/clever1.png" type="image/png">
+    <link rel="shortcut icon" href="https://support.highlandschools.org/wp-content/uploads/2020/11/clever1.png" type="image/png">
+    
+    <!-- Dynamic Manifest Link for Chrome App Installation -->
+    <link rel="manifest" id="manifest-link">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for specific Minecraft aesthetics */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Segoe UI', 'Noto Sans', sans-serif;
+            background-color: #1a1a1a;
+            user-select: none;
+        }
+
+        .mc-button {
+            background-color: #3ba55c;
+            border-bottom: 4px solid #28723f;
+            transition: background-color 0.1s;
+        }
+
+        .mc-button:hover {
+            background-color: #47c26c;
+            border-bottom-color: #318f4f;
+        }
+
+        .mc-button:active {
+            border-bottom-width: 0px;
+            transform: translateY(4px);
+        }
+
+        .mc-button-secondary {
+            background-color: #4a4a4a;
+            border-bottom: 4px solid #2d2d2d;
+            transition: background-color 0.1s;
+        }
+
+        .mc-button-secondary:hover {
+            background-color: #5c5c5c;
+            border-bottom-color: #3a3a3a;
+        }
+
+        .mc-button-secondary:active {
+            border-bottom-width: 0px;
+            transform: translateY(4px);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* View transition handling */
+        .view-section { display: none; height: 100%; width: 100%; }
+        .view-section.active { display: flex; flex-direction: column; }
+        
+        .tab-content { display: none; height: 100%; width: 100%; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="h-screen w-full flex text-gray-300 overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-[#232323] flex flex-col border-r border-[#111] z-30 shadow-lg relative">
+        <!-- Profile Section -->
+        <div class="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition border-b border-[#333]" onclick="switchSidebar('settings')">
+            <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold overflow-hidden">
+                <img src="https://api.dicebear.com/7.x/initials/svg?seed=WINX&backgroundColor=d32f2f" alt="Avatar" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1">
+                <div class="text-white font-bold text-sm">WINX800</div>
+                <div class="text-xs text-gray-400">Microsoft account</div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 py-2 overflow-y-auto" id="sidebar-nav">
+            <!-- News -->
+            <div class="sidebar-item flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition cursor-pointer border-l-4 border-transparent" data-target="news" onclick="switchSidebar('news')">
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-gray-200">News</span>
+            </div>
+
+            <!-- Java Edition (Active by default) -->
+            <div class="sidebar-item flex items-center gap-3 px-4 py-3 bg-[#333333] border-l-4 border-[#3ba55c] cursor-pointer" data-target="java" onclick="switchSidebar('java')">
+                <div class="w-6 h-6 bg-gradient-to-br from-green-500 to-green-700 rounded-sm shadow-inner overflow-hidden border border-green-900">
+                     <div class="h-1/2 w-full bg-[#5C913B]"></div>
+                     <div class="h-1/2 w-full bg-[#72543A]"></div>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold text-gray-400 leading-none">MINECRAFT</div>
+                    <div class="text-sm font-bold text-white leading-tight">Java Edition</div>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Install App Sidebar Button (Hidden by default, shown by JS when available) -->
+        <div id="sidebar-install-btn" class="hidden p-4 text-xs text-[#3ba55c] hover:text-[#47c26c] font-bold cursor-pointer border-t border-[#333] flex items-center gap-2" onclick="installApp()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Install as Chrome App
+        </div>
+
+        <div class="p-4 text-xs text-gray-500 hover:text-gray-300 cursor-pointer border-t border-[#333]" onclick="switchSidebar('settings')">
+            Settings
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col bg-[#1e1e1e] relative">
+        
+        <!-- ==================== JAVA EDITION VIEW ==================== -->
+        <div id="view-java" class="view-section active">
+            <!-- Header Nav -->
+            <header class="h-20 bg-[#282828] border-b border-[#111] flex flex-col justify-end px-8 z-20 shadow-md">
+                <h1 class="text-xs font-bold text-gray-400 mb-2">MINECRAFT: JAVA EDITION</h1>
+                <ul class="flex gap-6 text-sm" id="java-tabs">
+                    <li class="tab-item pb-3 border-b-2 border-white text-white font-bold cursor-pointer" data-target="play" onclick="switchJavaTab('play')">Play</li>
+                    <li class="tab-item pb-3 border-b-2 border-transparent hover:text-white cursor-pointer transition text-gray-400 font-medium" data-target="installations" onclick="switchJavaTab('installations')">Installations</li>
+                    <li class="tab-item pb-3 border-b-2 border-transparent hover:text-white cursor-pointer transition text-gray-400 font-medium" data-target="skins" onclick="switchJavaTab('skins')">Skins</li>
+                    <li class="tab-item pb-3 border-b-2 border-transparent hover:text-white cursor-pointer transition text-gray-400 font-medium" data-target="patch-notes" onclick="switchJavaTab('patch-notes')">Patch Notes</li>
+                </ul>
+            </header>
+
+            <div class="flex-1 relative bg-[#111] overflow-hidden">
+                
+                <!-- TAB: PLAY -->
+                <div id="tab-play" class="tab-content active relative">
+                    <!-- Background Artwork -->
+                    <img src="https://wallpapers.com/images/featured/minecraft-background-cfljc4haleghnajo.jpg" 
+                         alt="Minecraft Background" 
+                         class="absolute inset-0 w-full h-full object-cover object-center z-0 select-none pointer-events-none">
+                    
+                    <!-- Bottom Gradient Overlay -->
+                    <div class="absolute bottom-0 w-full h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none"></div>
+
+                    <!-- Controls (Version, Play, Name) -->
+                    <div class="absolute bottom-0 w-full px-8 pb-8 z-20 flex items-end justify-between">
+                        
+                        <!-- Version Selector Container -->
+                        <div class="relative w-64 z-50" id="version-container">
+                            <!-- Expanded Menu (Hidden by default) -->
+                            <div id="version-dropdown" class="absolute bottom-full left-0 mb-1 w-[260px] max-h-[300px] overflow-y-auto bg-[#212121] border border-[#333] shadow-2xl rounded-sm hidden flex-col z-50">
+                                <!-- Dynamically populated by JS -->
+                            </div>
+
+                            <!-- Selected Version (Click to toggle) -->
+                            <div class="flex items-center gap-3 px-4 py-2 bg-[#1a1a1a]/90 backdrop-blur border border-[#333] rounded-sm hover:bg-[#252525] cursor-pointer w-[260px]" onclick="toggleVersionDropdown(event)">
+                                <div class="w-6 h-6 bg-[#8b6540] rounded-sm flex flex-col border border-black/50 overflow-hidden">
+                                     <div id="selected-version-icon" class="h-full w-full bg-[#72543A]"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <div id="selected-version-name" class="text-sm font-bold text-white">Latest snapshot</div>
+                                    <div id="selected-version-number" class="text-xs text-gray-400">1.20-pre5</div>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 transition-transform duration-200" id="version-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- PLAY BUTTON -->
+                        <div class="flex-1 flex justify-center -mb-2">
+                            <button onclick="launchGame()" class="mc-button text-white font-extrabold text-2xl tracking-widest px-24 py-4 rounded-sm shadow-xl flex flex-col items-center group relative z-30">
+                                <span>PLAY</span>
+                            </button>
+                        </div>
+
+                        <!-- Right Side Username -->
+                        <div class="w-64 flex justify-end pb-2">
+                            <span class="text-sm font-bold text-white opacity-80">WINX800</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: INSTALLATIONS -->
+                <div id="tab-installations" class="tab-content bg-[#1e1e1e] p-8 overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Installations</h2>
+                        <button class="mc-button-secondary text-white font-bold px-4 py-2 rounded-sm text-sm">New installation</button>
+                    </div>
+                    
+                    <div class="space-y-2" id="installations-list">
+                        <!-- Dynamically populated by JS -->
+                    </div>
+                </div>
+
+                <!-- TAB: SKINS -->
+                <div id="tab-skins" class="tab-content bg-[#1e1e1e] p-8 overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Skins</h2>
+                        <button class="mc-button-secondary text-white font-bold px-4 py-2 rounded-sm text-sm">New skin</button>
+                    </div>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="bg-[#282828] border border-[#333] p-4 rounded-sm text-center">
+                            <img src="https://minepic.org/avatar/8/steve" alt="Steve" class="w-32 h-32 mx-auto mb-4 object-contain pixelated">
+                            <div class="font-bold text-white">Classic (Steve)</div>
+                            <div class="text-xs text-green-400 mt-1">CURRENT</div>
+                        </div>
+                        <div class="bg-[#282828] border border-[#333] p-4 rounded-sm text-center hover:bg-[#303030] cursor-pointer">
+                            <img src="https://minepic.org/avatar/8/alex" alt="Alex" class="w-32 h-32 mx-auto mb-4 object-contain pixelated">
+                            <div class="font-bold text-white">Slim (Alex)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: PATCH NOTES -->
+                <div id="tab-patch-notes" class="tab-content bg-[#1e1e1e] p-8 overflow-y-auto">
+                    <h2 class="text-2xl font-bold text-white mb-6">Patch Notes</h2>
+                    <div class="bg-[#282828] border border-[#333] p-6 rounded-sm mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2">Minecraft 1.20 Pre-Release 5</h3>
+                        <p class="text-sm text-gray-400 mb-4">May 16, 2023</p>
+                        <div class="text-gray-300 space-y-2 text-sm">
+                            <p>Here is another pre-release for Minecraft 1.20, Trails & Tales. This pre-release contains more bug fixes!</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>Fixed a bug where players could not open chests on donkeys.</li>
+                                <li>Updated network protocol for improved stability.</li>
+                                <li>Various UI tweaks and minor graphic fixes.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== NEWS VIEW ==================== -->
+        <div id="view-news" class="view-section bg-[#1e1e1e] p-8 overflow-y-auto">
+            <h1 class="text-3xl font-bold text-white mb-6">Minecraft News</h1>
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- News Card 1 -->
+                <div class="bg-[#282828] rounded-md overflow-hidden shadow-lg border border-[#333] hover:border-gray-500 cursor-pointer transition">
+                    <div class="h-40 bg-green-800 relative">
+                        <img src="https://assets.xboxservices.com/assets/2f/1b/2f1b4021-1b9c-48c9-8d82-89578278297b.jpg" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-4">
+                        <div class="text-xs font-bold text-green-500 mb-1">UPDATE</div>
+                        <h3 class="font-bold text-white text-lg leading-tight mb-2">Trails & Tales Update Available Now!</h3>
+                        <p class="text-sm text-gray-400 line-clamp-2">Discover new biomes, archaeology, and the mighty Sniffer in the latest major update.</p>
+                    </div>
+                </div>
+                <!-- News Card 2 -->
+                <div class="bg-[#282828] rounded-md overflow-hidden shadow-lg border border-[#333] hover:border-gray-500 cursor-pointer transition">
+                    <div class="h-40 bg-blue-800 flex items-center justify-center text-blue-300 font-bold text-2xl">MARKETPLACE</div>
+                    <div class="p-4">
+                        <div class="text-xs font-bold text-blue-500 mb-1">COMMUNITY</div>
+                        <h3 class="font-bold text-white text-lg leading-tight mb-2">Creator Spotlight: Spring Maps</h3>
+                        <p class="text-sm text-gray-400 line-clamp-2">Check out these incredible community maps perfect for the spring season.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SETTINGS VIEW ==================== -->
+        <div id="view-settings" class="view-section bg-[#1e1e1e] p-8 overflow-y-auto">
+            <h1 class="text-3xl font-bold text-white mb-6">Settings</h1>
+            <div class="max-w-2xl bg-[#282828] border border-[#333] rounded-sm p-6 space-y-6">
+                
+                <!-- NEW PWA INSTALLATION SECTION -->
+                <div>
+                    <h3 class="text-lg font-bold text-white border-b border-[#444] pb-2 mb-4">App Installation</h3>
+                    <div class="flex items-center justify-between bg-[#1a1a1a] p-4 border border-[#444] rounded-sm">
+                        <div>
+                            <div class="font-bold text-white">Install as Chrome App</div>
+                            <div class="text-xs text-gray-400 mt-1">Play fullscreen directly from your desktop or home screen (PWA).</div>
+                        </div>
+                        <button onclick="installApp()" class="mc-button px-4 py-2 rounded-sm text-white font-bold text-sm shadow-md flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Install
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold text-white border-b border-[#444] pb-2 mb-4">General</h3>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium">Keep launcher open while games are running</span>
+                        <input type="checkbox" class="w-4 h-4 accent-[#3ba55c]">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium">Start Minecraft Launcher when I start my PC</span>
+                        <input type="checkbox" class="w-4 h-4 accent-[#3ba55c]" checked>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white border-b border-[#444] pb-2 mb-4">Accounts</h3>
+                    <div class="flex items-center gap-4 bg-[#1a1a1a] p-3 border border-[#444] rounded-sm">
+                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold overflow-hidden">
+                            <img src="https://api.dicebear.com/7.x/initials/svg?seed=WINX&backgroundColor=d32f2f" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-bold text-white">WINX800</div>
+                            <div class="text-xs text-gray-400">Microsoft Account (Active)</div>
+                        </div>
+                        <button class="mc-button-secondary text-sm px-3 py-1 font-bold rounded-sm">Manage</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UI State, Cloaking Logic & PWA Registration -->
+    <script>
+        // Custom Alert to prevent default browser UI
+        function customAlert(message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center';
+            overlay.innerHTML = `
+                <div class="bg-[#282828] border border-[#333] p-6 rounded-sm shadow-2xl max-w-sm w-full">
+                    <h3 class="font-bold text-[#3ba55c] text-xl mb-4">Notice</h3>
+                    <p class="text-white text-sm mb-6 whitespace-pre-wrap">${message}</p>
+                    <div class="flex justify-end">
+                        <button class="mc-button px-6 py-2 rounded-sm text-white font-bold" onclick="this.closest('.fixed').remove()">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // --- PWA (Chrome App) Installation Logic ---
+        // Dynamically create manifest.json to keep this strictly 1 file
+        // The manifest name is Minecraft, and icon is Minecraft so it installs as the game.
+        const manifestData = {
+            "name": "Minecraft",
+            "short_name": "Minecraft",
+            "start_url": window.location.href,
+            "display": "standalone",
+            "background_color": "#1a1a1a",
+            "theme_color": "#282828",
+            "description": "Minecraft Game Launcher",
+            "icons": [{
+                "src": "https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/minecraft/minecraft.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            }, {
+                "src": "https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/minecraft/minecraft.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/manifest+json'});
+        document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+
+        // Dynamically register a dummy service worker (Required for Chrome installation prompt)
+        const swCode = `self.addEventListener('fetch', function(e) {});`;
+        const swBlob = new Blob([swCode], {type: 'application/javascript'});
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.log('SW registration issue:', err));
+        }
+
+        // Handle the prompt event
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            document.getElementById('sidebar-install-btn').classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                // Show the install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        document.getElementById('sidebar-install-btn').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                customAlert("App installation is not supported in this environment, or it is already installed!\n\nIf you are on desktop Chrome, look for the install icon (a screen with a down-arrow) in the right side of your URL address bar.");
+            }
+        }
+
+
+        // --- View & Navigation Management ---
+        function switchSidebar(target) {
+            // Update sidebar styles
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                if(item.dataset.target === target) {
+                    item.className = 'sidebar-item flex items-center gap-3 px-4 py-3 bg-[#333333] border-l-4 border-[#3ba55c] cursor-pointer';
+                    // Re-style inner text for active state
+                    const nameDiv = item.querySelector('div:last-child > div:last-child');
+                    if(nameDiv) { nameDiv.className = 'text-sm font-bold text-white leading-tight'; }
+                } else {
+                    item.className = 'sidebar-item flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition border-l-4 border-transparent cursor-pointer';
+                    // Re-style inner text for inactive state
+                    const nameDiv = item.querySelector('div:last-child > div:last-child');
+                    if(nameDiv) { nameDiv.className = 'text-sm font-medium text-gray-200 leading-tight'; }
+                }
+            });
+
+            // Switch views
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.classList.remove('active');
+            });
+            const viewToShow = document.getElementById(`view-${target}`);
+            if (viewToShow) {
+                viewToShow.classList.add('active');
+            }
+        }
+
+        function switchJavaTab(target) {
+            // Update Tab styles
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                if(tab.dataset.target === target) {
+                    tab.className = 'tab-item pb-3 border-b-2 border-white text-white font-bold cursor-pointer';
+                } else {
+                    tab.className = 'tab-item pb-3 border-b-2 border-transparent hover:text-white cursor-pointer transition text-gray-400 font-medium';
+                }
+            });
+
+            // Switch tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${target}`).classList.add('active');
+        }
+
+        // --- Dropdown Management & Dynamic Clients ---
+        const clients = [
+            { id: 'eagler18', name: 'EaglercraftX', version: '1.8.8', url: 'https://client.eaglercraft.win/eagler-files/1.8/Main/index.html', iconClass: 'bg-gradient-to-br from-[#5C913B] to-[#72543A]' },
+            { id: 'eagler15', name: 'Eaglercraft 1.5.2', version: '1.5.2', url: 'https://client.eaglercraft.win/eagler-files/1.5.2/main/index.html', iconClass: 'bg-[#72543A]' },
+            { id: 'astra', name: 'Astra Client', version: '1.8.8', url: 'https://client.eaglercraft.win/eagler-files/wasm/1.8/AstraClient/index.html', iconClass: 'bg-gradient-to-br from-purple-500 to-indigo-700' },
+            { id: 'resent', name: 'Resent Client', version: '1.8.8', url: 'https://client.eaglercraft.win/eagler-files/1.8/resent4.0/index.html', iconClass: 'bg-gradient-to-br from-red-500 to-red-800' },
+            { id: 'precision', name: 'Precision Client', version: '1.5.2', url: 'https://client.eaglercraft.win/eagler-files/1.5.2/PrecisionBeta.html', iconClass: 'bg-gradient-to-br from-blue-500 to-blue-800' },
+            { id: 'lambda', name: 'Starlike Client', version: '1.8.8', url: 'https://starlike.zumbiepig.dev/wasm.html', iconClass: 'bg-gradient-to-br from-yellow-500 to-yellow-800' },
+            { id: 'shadow', name: 'Shadow Client', version: '1.8.8', url: 'https://client.eaglercraft.win/eagler-files/1.8/Shadow_Client_en_US.html', iconClass: 'bg-gradient-to-br from-gray-700 to-gray-900' }
+        ];
+        let currentClient = clients[0];
+
+        function populateClients() {
+            const dropdownEl = document.getElementById('version-dropdown');
+            const installationsEl = document.getElementById('installations-list');
+            
+            dropdownEl.innerHTML = '';
+            installationsEl.innerHTML = '';
+
+            clients.forEach(client => {
+                // Populate Dropdown
+                const dropItem = document.createElement('div');
+                dropItem.className = 'flex items-center gap-3 px-4 py-3 hover:bg-[#323232] cursor-pointer border-b border-[#333]';
+                dropItem.onclick = () => selectVersion(client);
+                dropItem.innerHTML = `
+                    <div class="w-6 h-6 ${client.iconClass} rounded-sm flex flex-col border border-black/50 overflow-hidden"></div>
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-white">${client.name}</div>
+                        <div class="text-xs text-gray-400">${client.version}</div>
+                    </div>
+                `;
+                dropdownEl.appendChild(dropItem);
+
+                // Populate Installations
+                const instItem = document.createElement('div');
+                instItem.className = 'bg-[#282828] border border-[#333] p-4 flex items-center justify-between rounded-sm hover:bg-[#303030] cursor-pointer group';
+                instItem.onclick = () => { selectVersion(client); switchJavaTab('play'); };
+                instItem.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 ${client.iconClass} rounded-sm shadow-inner border border-black/50"></div>
+                        <div>
+                            <div class="font-bold text-white">${client.name}</div>
+                            <div class="text-sm text-gray-400">${client.version}</div>
+                        </div>
+                    </div>
+                    <button class="mc-button text-white font-bold px-6 py-2 rounded-sm text-sm opacity-0 group-hover:opacity-100 transition" onclick="event.stopPropagation(); selectVersion(client); switchJavaTab('play'); launchGame();">Play</button>
+                `;
+                installationsEl.appendChild(instItem);
+            });
+            
+            // Set initial selected
+            selectVersion(clients[0]);
+        }
+
+        function toggleVersionDropdown(e) {
+            if (e) e.stopPropagation(); // Prevent the outside-click listener from immediately closing it
+            
+            const dropdown = document.getElementById('version-dropdown');
+            const arrow = document.getElementById('version-arrow');
+            
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                dropdown.classList.add('flex');
+                arrow.classList.add('rotate-180');
+            } else {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+
+        function selectVersion(client) {
+            currentClient = client;
+            document.getElementById('selected-version-name').textContent = client.name;
+            document.getElementById('selected-version-number').textContent = client.version;
+            document.getElementById('selected-version-icon').className = `h-full w-full ${client.iconClass}`;
+            
+            // Force close the dropdown when an item is selected
+            const dropdown = document.getElementById('version-dropdown');
+            const arrow = document.getElementById('version-arrow');
+            
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('flex');
+            arrow.classList.remove('rotate-180');
+        }
+
+        // Initialize clients
+        populateClients();
+
+        // Close dropdown if clicked outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('version-container');
+            const dropdown = document.getElementById('version-dropdown');
+            const arrow = document.getElementById('version-arrow');
+            
+            if (container && !container.contains(e.target) && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                arrow.classList.remove('rotate-180');
+            }
+        });
+
+        // --- Game Launching Logic ---
+        function launchGame() {
+            if (!currentClient || !currentClient.url) return;
+            
+            // Open about:blank page in a NEW WINDOW to cloak the game
+            // The presence of "width, height" forces it to spawn as a separate popup window in modern browsers
+            const win = window.open('about:blank', '_blank', 'width=1280,height=720,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
+            
+            if (!win) {
+                customAlert('Popup blocked! Please allow popups to launch the game.');
+                return;
+            }
+
+            // Construct the cloaked page
+            const doc = win.document;
+            doc.title = currentClient.name; // Disguise tab title
+            
+            // Apply Clever cloaking icon to the new popup window as well
+            const iconLink = doc.createElement('link');
+            iconLink.rel = 'icon';
+            iconLink.type = 'image/png';
+            iconLink.href = 'https://support.highlandschools.org/wp-content/uploads/2020/11/clever1.png';
+            doc.head.appendChild(iconLink);
+            
+            // Set up body for full-screen iframe
+            doc.body.style.margin = '0';
+            doc.body.style.padding = '0';
+            doc.body.style.overflow = 'hidden';
+            doc.body.style.backgroundColor = '#000';
+            
+            // Create the iframe
+            const iframe = doc.createElement('iframe');
+            iframe.src = currentClient.url;
+            iframe.style.border = 'none';
+            iframe.style.width = '100vw';
+            iframe.style.height = '100vh';
+            iframe.style.margin = '0';
+            iframe.style.padding = '0';
+            
+            doc.body.appendChild(iframe);
+        }
+    </script>
+</body>
+</html>
