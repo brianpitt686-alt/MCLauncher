@@ -142,8 +142,8 @@
                 
                 <!-- TAB: PLAY -->
                 <div id="tab-play" class="tab-content active relative">
-                    <!-- Background Artwork -->
-                    <img src="https://wallpapers.com/images/featured/minecraft-background-cfljc4haleghnajo.jpg" 
+                    <!-- Updated Background Artwork -->
+                    <img src="https://4kwallpapers.com/images/walls/thumbs_3t/21999.jpg" 
                          alt="Minecraft Background" 
                          class="absolute inset-0 w-full h-full object-cover object-center z-0 select-none pointer-events-none">
                     
@@ -193,7 +193,7 @@
                 <div id="tab-installations" class="tab-content bg-[#1e1e1e] p-8 overflow-y-auto">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">Installations</h2>
-                        <button class="mc-button-secondary text-white font-bold px-4 py-2 rounded-sm text-sm">New installation</button>
+                        <button class="mc-button-secondary text-white font-bold px-4 py-2 rounded-sm text-sm" onclick="handleNewInstallation()">New installation</button>
                     </div>
                     
                     <div class="space-y-2" id="installations-list">
@@ -337,8 +337,6 @@
         }
 
         // --- PWA (Chrome App) Installation Logic ---
-        // Dynamically create manifest.json to keep this strictly 1 file
-        // The manifest name is Minecraft, and icon is Minecraft so it installs as the game.
         const manifestData = {
             "name": "Minecraft",
             "short_name": "Minecraft",
@@ -361,32 +359,24 @@
         const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/manifest+json'});
         document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
-        // Dynamically register a dummy service worker (Required for Chrome installation prompt)
         const swCode = `self.addEventListener('fetch', function(e) {});`;
         const swBlob = new Blob([swCode], {type: 'application/javascript'});
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.log('SW registration issue:', err));
         }
 
-        // Handle the prompt event
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent Chrome 67 and earlier from automatically showing the prompt
             e.preventDefault();
-            // Stash the event so it can be triggered later
             deferredPrompt = e;
-            // Update UI to notify the user they can add to home screen
             document.getElementById('sidebar-install-btn').classList.remove('hidden');
         });
 
         function installApp() {
             if (deferredPrompt) {
-                // Show the install prompt
                 deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
                         document.getElementById('sidebar-install-btn').classList.add('hidden');
                     }
                     deferredPrompt = null;
@@ -396,25 +386,20 @@
             }
         }
 
-
         // --- View & Navigation Management ---
         function switchSidebar(target) {
-            // Update sidebar styles
             document.querySelectorAll('.sidebar-item').forEach(item => {
                 if(item.dataset.target === target) {
                     item.className = 'sidebar-item flex items-center gap-3 px-4 py-3 bg-[#333333] border-l-4 border-[#3ba55c] cursor-pointer';
-                    // Re-style inner text for active state
                     const nameDiv = item.querySelector('div:last-child > div:last-child');
                     if(nameDiv) { nameDiv.className = 'text-sm font-bold text-white leading-tight'; }
                 } else {
                     item.className = 'sidebar-item flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition border-l-4 border-transparent cursor-pointer';
-                    // Re-style inner text for inactive state
                     const nameDiv = item.querySelector('div:last-child > div:last-child');
                     if(nameDiv) { nameDiv.className = 'text-sm font-medium text-gray-200 leading-tight'; }
                 }
             });
 
-            // Switch views
             document.querySelectorAll('.view-section').forEach(view => {
                 view.classList.remove('active');
             });
@@ -425,7 +410,6 @@
         }
 
         function switchJavaTab(target) {
-            // Update Tab styles
             document.querySelectorAll('.tab-item').forEach(tab => {
                 if(tab.dataset.target === target) {
                     tab.className = 'tab-item pb-3 border-b-2 border-white text-white font-bold cursor-pointer';
@@ -434,15 +418,14 @@
                 }
             });
 
-            // Switch tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             document.getElementById(`tab-${target}`).classList.add('active');
         }
 
-        // --- Dropdown Management & Dynamic Clients ---
-        const clients = [
+        // --- Data & State Setup ---
+        const defaultClients = [
             { id: 'eagler18', name: 'EaglercraftX', version: '1.12', url: 'https://brianpitt686-alt.github.io/MCLauncher/Minecraft/Minecraft1.12/index.html', iconClass: 'bg-gradient-to-br from-[#5C913B] to-[#72543A]' },
             { id: 'eagler15', name: 'Eaglercraft 1.8.8', version: '1.5.2', url: 'https://brianpitt686-alt.github.io/MCLauncher/Minecraft/Minecraft1.8.8/index.html', iconClass: 'bg-[#72543A]' },
             { id: 'astra', name: 'Astra Client', version: '1.8.8', url: 'https://astraclientorg.github.io/play/wasm/18/', iconClass: 'bg-gradient-to-br from-purple-500 to-indigo-700' },
@@ -451,16 +434,117 @@
             { id: 'lambda', name: 'Starlike Client', version: '1.8.8', url: 'https://eaglercdn.ir/storage/offline/custom/Eaglercraft_IR_StarLikeClient_0.4.2.zip', iconClass: 'bg-gradient-to-br from-yellow-500 to-yellow-800' },
             { id: 'shadow', name: 'Shadow Client', version: '1.8.8', url: 'https://client.eaglercraft.win/eagler-files/1.8/Shadow_Client_en_US.html', iconClass: 'bg-gradient-to-br from-gray-700 to-gray-900' }
         ];
-        let currentClient = clients[0];
+        
+        let customClients = [];
+        let currentClient = defaultClients[0];
+        let db;
 
+        // --- IndexedDB for Uploaded Files ---
+        function initDB() {
+            const request = indexedDB.open('MCLauncherDB', 1);
+            
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('installations')) {
+                    db.createObjectStore('installations', { keyPath: 'id' });
+                }
+            };
+            
+            request.onsuccess = (e) => {
+                db = e.target.result;
+                loadCustomClients();
+            };
+            
+            request.onerror = (e) => {
+                console.error("IndexedDB error", e);
+                // Fallback rendering if DB fails
+                populateClients();
+            };
+        }
+
+        function loadCustomClients() {
+            try {
+                const tx = db.transaction('installations', 'readonly');
+                const store = tx.objectStore('installations');
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    customClients = request.result || [];
+                    populateClients();
+                };
+            } catch(e) {
+                console.error("Failed to load custom clients", e);
+                populateClients();
+            }
+        }
+
+        // --- Custom HTML Upload ---
+        function handleNewInstallation() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const name = prompt("Enter a name for this custom installation:", file.name.replace('.html', ''));
+                if (!name) return;
+
+                const customClient = {
+                    id: 'custom_' + Date.now(),
+                    name: name,
+                    version: 'Custom HTML',
+                    isCustom: true,
+                    fileBlob: file, // Store the physical File blob in DB
+                    iconClass: 'bg-gradient-to-br from-teal-500 to-cyan-500'
+                };
+
+                try {
+                    const tx = db.transaction('installations', 'readwrite');
+                    const store = tx.objectStore('installations');
+                    store.put(customClient);
+                    tx.oncomplete = () => {
+                        customClients.push(customClient);
+                        populateClients();
+                        customAlert("Custom installation saved successfully!");
+                    };
+                } catch(err) {
+                    console.error("Failed to save to DB", err);
+                    customAlert("Failed to save. Make sure your browser allows local storage.");
+                }
+            };
+            input.click();
+        }
+
+        function deleteInstallation(id, e) {
+            if (e) e.stopPropagation();
+            if (!confirm("Are you sure you want to delete this custom installation?")) return;
+
+            try {
+                const tx = db.transaction('installations', 'readwrite');
+                const store = tx.objectStore('installations');
+                store.delete(id);
+                tx.oncomplete = () => {
+                    customClients = customClients.filter(c => c.id !== id);
+                    if (currentClient.id === id) {
+                        selectVersion(defaultClients[0], true);
+                    }
+                    populateClients();
+                };
+            } catch(err) {
+                console.error("Failed to delete", err);
+            }
+        }
+
+        // --- Dropdown Management & Dynamic Rendering ---
         function populateClients() {
+            const allClients = [...defaultClients, ...customClients];
             const dropdownEl = document.getElementById('version-dropdown');
             const installationsEl = document.getElementById('installations-list');
             
             dropdownEl.innerHTML = '';
             installationsEl.innerHTML = '';
 
-            clients.forEach(client => {
+            allClients.forEach(client => {
                 // Populate Dropdown
                 const dropItem = document.createElement('div');
                 dropItem.className = 'flex items-center gap-3 px-4 py-3 hover:bg-[#323232] cursor-pointer border-b border-[#333]';
@@ -474,30 +558,59 @@
                 `;
                 dropdownEl.appendChild(dropItem);
 
-                // Populate Installations
+                // Populate Installations List safely creating DOM elements
                 const instItem = document.createElement('div');
                 instItem.className = 'bg-[#282828] border border-[#333] p-4 flex items-center justify-between rounded-sm hover:bg-[#303030] cursor-pointer group';
                 instItem.onclick = () => { selectVersion(client); switchJavaTab('play'); };
-                instItem.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 ${client.iconClass} rounded-sm shadow-inner border border-black/50"></div>
-                        <div>
-                            <div class="font-bold text-white">${client.name}</div>
-                            <div class="text-sm text-gray-400">${client.version}</div>
-                        </div>
+                
+                const leftSide = document.createElement('div');
+                leftSide.className = 'flex items-center gap-4';
+                leftSide.innerHTML = `
+                    <div class="w-10 h-10 ${client.iconClass} rounded-sm shadow-inner border border-black/50"></div>
+                    <div>
+                        <div class="font-bold text-white">${client.name}</div>
+                        <div class="text-sm text-gray-400">${client.version}</div>
                     </div>
-                    <button class="mc-button text-white font-bold px-6 py-2 rounded-sm text-sm opacity-0 group-hover:opacity-100 transition" onclick="event.stopPropagation(); selectVersion(client); switchJavaTab('play'); launchGame();">Play</button>
                 `;
+
+                const rightSide = document.createElement('div');
+                rightSide.className = 'flex items-center';
+
+                const playBtn = document.createElement('button');
+                playBtn.className = 'mc-button text-white font-bold px-6 py-2 rounded-sm text-sm opacity-0 group-hover:opacity-100 transition';
+                playBtn.textContent = 'Play';
+                playBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    selectVersion(client);
+                    switchJavaTab('play');
+                    launchGame();
+                };
+                rightSide.appendChild(playBtn);
+
+                // Add delete button for custom uploads
+                if (client.isCustom) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'mc-button-secondary text-red-400 hover:text-red-300 font-bold px-4 py-2 rounded-sm text-sm opacity-0 group-hover:opacity-100 transition ml-2 border border-red-900/30 hover:bg-red-900/20';
+                    delBtn.textContent = 'Delete';
+                    delBtn.onclick = (e) => deleteInstallation(client.id, e);
+                    rightSide.appendChild(delBtn);
+                }
+
+                instItem.appendChild(leftSide);
+                instItem.appendChild(rightSide);
                 installationsEl.appendChild(instItem);
             });
             
-            // Set initial selected
-            selectVersion(clients[0]);
+            // Re-select visually in case it changed
+            if (!allClients.includes(currentClient)) {
+                selectVersion(allClients[0] || defaultClients[0], true);
+            } else {
+                selectVersion(currentClient, true);
+            }
         }
 
         function toggleVersionDropdown(e) {
-            if (e) e.stopPropagation(); // Prevent the outside-click listener from immediately closing it
-            
+            if (e) e.stopPropagation(); 
             const dropdown = document.getElementById('version-dropdown');
             const arrow = document.getElementById('version-arrow');
             
@@ -512,23 +625,36 @@
             }
         }
 
-        function selectVersion(client) {
+        function selectVersion(client, skipHideDropdown = false) {
             currentClient = client;
             document.getElementById('selected-version-name').textContent = client.name;
             document.getElementById('selected-version-number').textContent = client.version;
             document.getElementById('selected-version-icon').className = `h-full w-full ${client.iconClass}`;
             
-            // Force close the dropdown when an item is selected
-            const dropdown = document.getElementById('version-dropdown');
-            const arrow = document.getElementById('version-arrow');
-            
-            dropdown.classList.add('hidden');
-            dropdown.classList.remove('flex');
-            arrow.classList.remove('rotate-180');
+            if (!skipHideDropdown) {
+                const dropdown = document.getElementById('version-dropdown');
+                const arrow = document.getElementById('version-arrow');
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                arrow.classList.remove('rotate-180');
+            }
         }
 
-        // Initialize clients
-        populateClients();
+        // --- Launch Game Action ---
+        function launchGame() {
+            if (!currentClient) return;
+
+            if (currentClient.isCustom && currentClient.fileBlob) {
+                // Generate a temporary URL for the stored HTML file Blob
+                const url = URL.createObjectURL(currentClient.fileBlob);
+                window.open(url, '_blank');
+            } else if (currentClient.url) {
+                // Open standard web link
+                window.open(currentClient.url, '_blank');
+            } else {
+                customAlert("Error: Client launch details missing.");
+            }
+        }
 
         // Close dropdown if clicked outside
         document.addEventListener('click', (e) => {
@@ -543,47 +669,11 @@
             }
         });
 
-        // --- Game Launching Logic ---
-        function launchGame() {
-            if (!currentClient || !currentClient.url) return;
-            
-            // Open about:blank page in a NEW WINDOW to cloak the game
-            // The presence of "width, height" forces it to spawn as a separate popup window in modern browsers
-            const win = window.open('about:blank', '_blank', 'width=1280,height=720,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
-            
-            if (!win) {
-                customAlert('Popup blocked! Please allow popups to launch the game.');
-                return;
-            }
+        // Setup the Database when DOM is ready
+        window.onload = () => {
+            initDB();
+        };
 
-            // Construct the cloaked page
-            const doc = win.document;
-            doc.title = currentClient.name; // Disguise tab title
-            
-            // Apply Clever cloaking icon to the new popup window as well
-            const iconLink = doc.createElement('link');
-            iconLink.rel = 'icon';
-            iconLink.type = 'image/png';
-            iconLink.href = 'https://support.highlandschools.org/wp-content/uploads/2020/11/clever1.png';
-            doc.head.appendChild(iconLink);
-            
-            // Set up body for full-screen iframe
-            doc.body.style.margin = '0';
-            doc.body.style.padding = '0';
-            doc.body.style.overflow = 'hidden';
-            doc.body.style.backgroundColor = '#000';
-            
-            // Create the iframe
-            const iframe = doc.createElement('iframe');
-            iframe.src = currentClient.url;
-            iframe.style.border = 'none';
-            iframe.style.width = '100vw';
-            iframe.style.height = '100vh';
-            iframe.style.margin = '0';
-            iframe.style.padding = '0';
-            
-            doc.body.appendChild(iframe);
-        }
     </script>
 </body>
 </html>
