@@ -605,7 +605,7 @@
             }
         }
 
-        // --- Launch Game Action (Cloaked) ---
+        // --- Launch Game Action (Separate Window) ---
         function launchGame() {
             if (!currentClient) return;
 
@@ -621,15 +621,23 @@
                 return;
             }
 
-            // Create the about:blank window
-            const win = window.open('about:blank', '_blank');
+            // Define window features (dimensions, no toolbar, no menubar)
+            const width = 1280;
+            const height = 720;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            
+            const windowFeatures = `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no`;
+
+            // Open the new separate window
+            const win = window.open('about:blank', '_blank', windowFeatures);
             
             if (!win) {
                 customAlert("Pop-up blocked! Please allow pop-ups to play.");
                 return;
             }
 
-            // Write the iframe content to the new window
+            // Write the cloaked iframe content to the new window
             const htmlContent = `
                 <!DOCTYPE html>
                 <html style="margin:0; width:100%; height:100%; overflow:hidden;">
